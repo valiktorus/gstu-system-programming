@@ -157,7 +157,7 @@
     <ClCompile Include="Lab1.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Lab1.rc" />
+    <ResourceCompile Include="Lab3.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\Red Neon\move.ico" />

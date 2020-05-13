@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
-// Включаемый файл, созданный в Microsoft Visual C++.
-// Используется WindowsProject10.rc
+// Microsoft Visual C++ generated include file.
+// Used by WindowsProject10.rc
 //
 #define IDC_MYICON                      2
 #define IDD_WINDOWSPROJECT10_DIALOG     102

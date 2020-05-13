@@ -24,17 +24,17 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lab1.h">
+    <ClInclude Include="Lab4_2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Lab1.cpp">
+    <ClCompile Include="Lab4_2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Lab1.rc">
+    <ResourceCompile Include="Lab4_2.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -42,22 +42,20 @@
     <Image Include="small.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Lab1.ico">
+    <Image Include="Lab4_2.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\Red Neon\move.ico">
+    <Image Include="..\files\kotelok.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\files\Red Neon\move.ico">
+    <Image Include="..\files\Lozhka.bmp">
       <Filter>Resource Files</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Red Neon\link select.cur">
+    <Image Include="..\files\bitmap1.bmp">
       <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\files\Red Neon\link select.cur">
+    </Image>
+    <Image Include="..\files\Spoon.bmp">
       <Filter>Resource Files</Filter>
-    </None>
+    </Image>
   </ItemGroup>
 </Project>
