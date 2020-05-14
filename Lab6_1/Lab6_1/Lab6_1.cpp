@@ -1,32 +1,36 @@
-// Lab5.cpp : Defines the entry point for the application.
+// Lab6_1.cpp : Defines the entry point for the application.
 //
 
 #include "framework.h"
-#include "Lab5.h"
-
+#include "Lab6_1.h"
+#include <string> 
 
 #define MAX_LOADSTRING 100
 
-struct Calculator {
-    int array[50];
-    int A;
-    int B;
-    int mult;
-    int negativeNumberCount;
-    int arraySize;
-};
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-//static HICON hIcon1;
+
+TCHAR semaphoreName[] = TEXT("MySemaphore");
+HDC hdc, memdc;
+HBITMAP hbitmap;
+DWORD fillArrayThreadId, arrayCorrectorThreadId, startDisplayingThreadId;  //идентификатор потока для рандома идентификатор для потока замены
+HANDLE fillArrayThread, arrayCorrectorThread, startDisplayingThread;
+HANDLE hSemaphore = CreateSemaphore(NULL, 0, 1, semaphoreName);
+
+wchar_t str[10];
+int x = 0, y = 0;
+int arr[10];
+
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK OpenDialog(HWND, UINT, WPARAM, LPARAM);
-
+DWORD               fillArray(LPVOID);
+DWORD               ArrayCorrector(LPVOID);
+DWORD               StartDisplaying(LPVOID); 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -40,7 +44,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_LAB5, szWindowClass, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_LAB61, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
@@ -49,7 +53,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_LAB5));
+    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_LAB61));
 
     MSG msg;
 
@@ -84,10 +88,10 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LAB5));
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_LAB61));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_LAB5);
+    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_LAB61);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -132,21 +136,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - post a quit message and return
 //
 //
-__declspec(dllimport) HICON hIcon;
-WINGDIAPI VOID WINAPI Сalculate(Calculator&);
-//HICON hIcon1;
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static HINSTANCE hLibrary;
     switch (message)
     {
     case WM_CREATE:
-       SetClassLong(hWnd, GCLP_HICON, (LONG)hIcon);
-       SetClassLong(hWnd, GCLP_HCURSOR, (LONG)hCursor);
-       // hLibrary = LoadLibrary(_T("Lab5_1_DLL"));
-        //hIcon = *((HICON*)GetProcAddress(hLibrary, "hIcon"));
-        //SetClassLong(hWnd, -34, (LONG)hIcon);
-       
+        hdc = GetDC(hWnd); // выделение контекста
+        memdc = CreateCompatibleDC(hdc);// обращение к участку виртуальной памяти
+        hbitmap = CreateCompatibleBitmap(hdc, 1000, 1000); // размеры 
+        SelectObject(memdc, hbitmap); // 
+        PatBlt(memdc, 0, 0, 1000, 1000, PATCOPY);
+        ReleaseDC(hWnd, hdc);
+        fillArrayThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)fillArray, (LPVOID) NULL, 0, &fillArrayThreadId);
+        arrayCorrectorThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ArrayCorrector, (LPVOID) NULL, 0, &arrayCorrectorThreadId);
+        startDisplayingThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) StartDisplaying , (LPVOID) NULL, 0, &startDisplayingThreadId);
+        ReleaseSemaphore(hSemaphore, 1, NULL);
         break;
     case WM_COMMAND:
         {
@@ -154,9 +158,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Parse the menu selections:
             switch (wmId)
             {
-            case ID_OPEN_DIALOG:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, OpenDialog);
-                break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -170,16 +171,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_PAINT:
         {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
-        HDC memDC = CreateCompatibleDC(hdc);
-        Calculator calculator;
-       // Сalculate(calculator);
-      //  SelectObject(memDC, hBitmap);
-      //  BitBlt(hdc, 100, 100, 292, 143, memDC, 0, 0, SRCCOPY);
-
-        // TODO: Add any drawing code that uses hdc here...
-        EndPaint(hWnd, &ps);
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            BitBlt(hdc, 0, 0, 1000, 1000, memdc, 0, 0, SRCCOPY);
+            EndPaint(hWnd, &ps);
         }
         break;
     case WM_DESTROY:
@@ -211,50 +206,57 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
-INT_PTR CALLBACK OpenDialog(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+DWORD fillArray(LPVOID param)
 {
-    static HWND hList;
-    static int i = 0;
-    static int n = 0;
-    static int inbuf[50];
-    TCHAR buf[50];
-    hList = GetDlgItem(hDlg, IDC_LIST1);
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
+    while (true)
     {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDC_BUTTON1) {
-            inbuf[i++] = GetDlgItemInt(hDlg, IDC_EDIT1, 0, 1);
-            GetDlgItemText(hDlg, IDC_EDIT1, buf, wcslen(buf));
-            SendMessage(hList, LB_ADDSTRING, 0, LPARAM(buf));
-            n = i;
-            break;
-        }
-        if(LOWORD(wParam) == IDC_BUTTON2)
+        WaitForSingleObject(hSemaphore, INFINITE);
+        for (int i = 0; i < ARRAYSIZE(arr); i++)
         {
-            Calculator calculator;
-            for (int i = 0; i < n; i++)
-            {
-                calculator.array[i] = inbuf[i];
-            }
-            GetDlgItemText(hDlg, IDC_EDIT2, buf, wcslen(buf));
-            calculator.A = _wtoi(buf);
-            GetDlgItemText(hDlg, IDC_EDIT3, buf, wcslen(buf));
-            calculator.B = _wtoi(buf);
-            calculator.arraySize = n;
-           // Сalculate(calculator);
-           //// SetDlgItemInt(hDlg, IDC_EDIT4, calculator.mult, 1);
-           // SetDlgItemInt(hDlg, IDC_EDIT5, calculator.negativeNumberCount, 1);
+            arr[i] = (double)rand() / (RAND_MAX + 1) * 300 - 150;
         }
-        if (LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
+        ReleaseSemaphore(hSemaphore, 1, NULL);
+        Sleep(100);
     }
-    return (INT_PTR)FALSE;
+    return 0;
+}
+
+DWORD ArrayCorrector(LPVOID param)
+{
+    while (true)
+    {
+        WaitForSingleObject(hSemaphore, INFINITE);
+        int sum = 0;
+        int size = ARRAYSIZE(arr);
+        for (int i = 0; i < size ; i++)
+        {
+            if ((arr[i] > 99 && arr[i] < 999) || (arr[i] < 99 && arr[i] > 1000))
+            {
+                arr[i] = arr[i] % 100;
+            }
+        }
+        ReleaseSemaphore(hSemaphore, 1, NULL);
+        Sleep(100);
+    }
+    return 0;
+}
+
+DWORD StartDisplaying(LPVOID param) {
+    while (true)
+    {
+        WaitForSingleObject(hSemaphore, INFINITE);
+        for (int i = 0; i < ARRAYSIZE(arr); i++)
+        {
+            swprintf_s(str, TEXT("|  %4d"), arr[i]); 
+            TextOut(memdc, x, y, str, wcslen(str));
+            InvalidateRect(NULL, NULL, true); 
+            x += 50;
+        }
+        x = 0;
+        y += 20;
+        ReleaseSemaphore(hSemaphore, 1, NULL);
+        Sleep(1000);
+    }
+   
+    return 0;
 }
